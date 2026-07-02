@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>私記事</title>
+<style>
+  :root{
+    --bg:#14151a; --panel:#1c1e26; --panel-2:#23252f; --line:#2d303c;
+    --ink:#ece9e2; --sub:#8b8d9a; --accent:#c9a15a; --accent-dim:#7a6438;
+    --accent2:#e8607a; --danger:#b3564a; --ok:#6fae7f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif; padding-bottom:env(safe-area-inset-bottom);}
+  .wrap{max-width:480px; margin:0 auto; padding:24px 18px 110px;}
+  h1{font-size:19px; margin:0;} h1 span{color:var(--accent);}
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+  .room-badge{font-size:11px; color:var(--sub); background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:5px 10px; cursor:pointer;}
+
+  .tabs{display:flex; gap:6px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:4px; margin-bottom:20px;}
+  .tab{flex:1; text-align:center; padding:9px 0; border-radius:999px; font-size:13px; color:var(--sub); cursor:pointer; user-select:none;}
+  .tab.active{background:var(--accent); color:#1a1608; font-weight:600;}
+  .page{display:none;} .page.active{display:block;}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px;}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:12px 10px; text-align:center;}
+  .stat .num{font-size:20px; font-weight:700;} .stat .lbl{font-size:10px; color:var(--sub); margin-top:2px;}
+
+  .timer-card{background:linear-gradient(180deg,var(--panel-2),var(--panel)); border:1px solid var(--line); border-radius:24px; padding:24px 18px; text-align:center; margin-bottom:18px;}
+  .btn{appearance:none; border:none; border-radius:999px; padding:15px 22px; font-size:15px; font-weight:600; cursor:pointer; width:100%;}
+  .btn-start{background:var(--accent); color:#1a1608;}
+  .btn-stop{background:var(--danger); color:#fff;}
+  .btn-edge{background:linear-gradient(135deg,var(--accent2),#b3564a); color:#fff;}
+  .row2{display:flex; gap:10px; margin-top:10px;} .row2 .btn{font-size:13px; padding:11px;}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--sub);}
+
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; font-size:13px; color:var(--sub); margin-top:14px; padding:0 4px;}
+  .switch{position:relative; width:42px; height:24px;}
+  .switch input{opacity:0; width:100%; height:100%; margin:0; position:absolute; z-index:2; cursor:pointer;}
+  .switch .track{position:absolute; inset:0; background:#3a3d4a; border-radius:999px; transition:.2s;}
+  .switch input:checked + .track{background:var(--accent);}
+  .switch .thumb{position:absolute; top:2px; left:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:.2s;}
+  .switch input:checked ~ .thumb{transform:translateX(18px);}
+
+  .section-title{font-size:13px; color:var(--sub); margin:24px 0 10px; display:flex; justify-content:space-between; align-items:center;}
+  .log-item{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;}
+  .log-item .date{color:var(--sub); font-size:11px; display:block;}
+  .log-item .dur{font-size:13px; color:var(--accent);}
+  .log-item .dur.hidden-dur{color:var(--sub); font-style:italic;}
+  .log-item .del{background:none; border:none; color:var(--sub); font-size:16px; padding:2px 8px; cursor:pointer;}
+  .empty{text-align:center; color:var(--sub); font-size:13px; padding:24px 0;}
+
+  .podium-wrap{background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:26px 14px 14px; margin-bottom:16px;}
+  .podium{display:flex; align-items:flex-end; justify-content:center; gap:8px;}
+  .p-col{display:flex; flex-direction:column; align-items:center; width:30%;}
+  .p-avatar{width:52px; height:52px; border-radius:50%; background:var(--panel-2); display:flex; align-items:center; justify-content:center; font-size:24px; border:3px solid var(--line); margin-bottom:6px;}
+  .p-col.first .p-avatar{width:64px; height:64px; font-size:30px; border-color:var(--accent);}
+  .p-col.second .p-avatar{border-color:#9ea2b0;} .p-col.third .p-avatar{border-color:#a9713f;}
+  .p-name{font-size:12.5px; font-weight:700; margin-bottom:2px; text-align:center;}
+  .p-count{font-size:11px; color:var(--sub); margin-bottom:8px;}
+  .p-stand{width:100%; border-radius:10px 10px 0 0; display:flex; align-items:flex-start; justify-content:center; padding-top:8px; font-weight:800; font-size:15px; color:#1a1608;}
+  .p-col.first .p-stand{height:78px; background:linear-gradient(180deg,#e8c667,#c9a15a);}
+  .p-col.second .p-stand{height:54px; background:linear-gradient(180deg,#c9ccd6,#9ea2b0);}
+  .p-col.third .p-stand{height:40px; background:linear-gradient(180deg,#d69a6c,#a9713f);}
+
+  .leaderboard{background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:16px;}
+  .lb-item{display:flex; align-items:center; gap:12px; padding:8px 4px;}
+  .lb-avatar{width:36px; height:36px; border-radius:50%; background:var(--panel-2); display:flex; align-items:center; justify-content:center; font-size:17px; border:1px solid var(--line);}
+  .lb-mid{flex:1; min-width:0;} .lb-name{font-size:13.5px; font-weight:600;}
+  .lb-name .you-tag{font-size:9px; background:var(--accent); color:#1a1608; border-radius:999px; padding:1px 6px; font-weight:700; margin-left:4px;}
+  .lb-bar-track{height:5px; border-radius:999px; background:var(--panel-2); margin-top:6px; overflow:hidden;}
+  .lb-bar-fill{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .lb-count{color:var(--ink); font-weight:700; font-size:14px;} .lb-count small{color:var(--sub); font-weight:500; font-size:10px;}
+
+  .member-item{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-bottom:10px;}
+  .member-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
+  .member-name{font-weight:600; font-size:14px; display:flex; align-items:center; gap:6px;}
+  .member-time{font-size:11px; color:var(--sub);}
+  .member-detail{font-size:13px; color:var(--sub);} .member-detail b{color:var(--ink);}
+
+  /* 控射 */
+  .edge-hero{text-align:center; padding:20px 10px 6px;}
+  .edge-hero .emoji{font-size:40px; margin-bottom:6px;}
+  .edge-hero h2{margin:4px 0; font-size:19px;}
+  .edge-hero p{color:var(--sub); font-size:12.5px; margin:0; line-height:1.6;}
+  .edge-config{background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:18px; margin:16px 0;}
+  .diff-grid{display:flex; flex-direction:column; gap:10px; margin-bottom:16px;}
+  .diff-card{background:var(--panel-2); border:1.5px solid var(--line); border-radius:18px; padding:14px 15px; display:flex; align-items:center; gap:12px; cursor:pointer;}
+  .diff-card.selected{border-color:var(--accent2); background:linear-gradient(135deg,rgba(232,96,122,0.1),var(--panel-2));}
+  .diff-emoji{font-size:22px; width:34px; text-align:center;}
+  .diff-info{flex:1;} .diff-name{font-size:14px; font-weight:700; margin-bottom:2px;} .diff-desc{font-size:11px; color:var(--sub);}
+  .diff-check{width:20px; height:20px; border-radius:50%; border:2px solid var(--line); flex-shrink:0; position:relative;}
+  .diff-card.selected .diff-check{border-color:var(--accent2); background:var(--accent2);}
+  .diff-card.selected .diff-check::after{content:'✓'; color:#fff; font-size:12px; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;}
+
+  .edge-stage{text-align:center; padding:30px 10px; transition:background-color .6s ease; border-radius:24px;}
+  .edge-stage.bg-go{background:rgba(111,174,127,0.06);} .edge-stage.bg-stop{background:rgba(179,86,74,0.08);}
+  .edge-stage.bg-cum{background:rgba(111,174,127,0.16);} .edge-stage.bg-fail{background:rgba(179,86,74,0.2);}
+  .edge-ring{width:200px; height:200px; border-radius:50%; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; flex-direction:column; border:6px solid var(--line); transition:border-color .5s ease, transform .3s ease, box-shadow .5s ease;}
+  .edge-ring.pulse{animation:ringPulse .55s ease;}
+  @keyframes ringPulse{0%{transform:scale(1);} 35%{transform:scale(1.06);} 100%{transform:scale(1);}}
+  .edge-ring.state-go{border-color:var(--ok);} .edge-ring.state-go .state-label{color:var(--ok);}
+  .edge-ring.state-stop{border-color:var(--danger);} .edge-ring.state-stop .state-label{color:var(--danger);}
+  .edge-ring.state-cum{border-color:#4fe07a; box-shadow:0 0 34px rgba(79,224,122,0.45); animation:cumGlow 1s ease-in-out infinite alternate;}
+  @keyframes cumGlow{from{box-shadow:0 0 20px rgba(79,224,122,0.3);} to{box-shadow:0 0 44px rgba(79,224,122,0.65);}}
+  .edge-ring.state-cum .state-label{color:#4fe07a;}
+  .edge-ring.state-fail{border-color:#e0524a; box-shadow:0 0 34px rgba(224,82,74,0.5);} .edge-ring.state-fail .state-label{color:#e0524a;}
+  .edge-ring.state-success{border-color:var(--accent); box-shadow:0 0 34px rgba(201,161,90,0.5);} .edge-ring.state-success .state-label{color:var(--accent);}
+  .state-label{font-size:22px; font-weight:800; letter-spacing:.05em;}
+  .state-sub{font-size:12px; color:var(--sub); margin-top:6px;}
+  .round-bar-track{height:10px; border-radius:999px; background:var(--panel-2); max-width:280px; margin:4px auto 8px; overflow:hidden;}
+  .round-bar-fill{height:100%; border-radius:999px; transition:width .12s linear;}
+  .round-bar-fill.go{background:linear-gradient(90deg,var(--ok),#4fe07a);}
+  .round-bar-fill.stop{background:linear-gradient(90deg,var(--danger),#e0524a);}
+  .cum-timer-track{height:8px; border-radius:999px; background:var(--panel-2); max-width:260px; margin:4px auto 14px; overflow:hidden;}
+  .cum-timer-fill{height:100%; background:linear-gradient(90deg,#4fe07a,#2fae5c); border-radius:999px; transition:width .1s linear;}
+  .result-emoji{font-size:44px; margin-bottom:8px;}
+
+  /* 統計 */
+  .stats-card{background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:18px; margin-bottom:16px;}
+  .stats-card h3{font-size:13px; margin:0 0 4px;} .stats-card .sub-note{font-size:11px; color:var(--sub); margin-bottom:14px;}
+  .bar-chart{display:flex; align-items:flex-end; gap:8px; height:120px;}
+  .bar-chart .bar-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .bar-chart .bar{width:100%; max-width:22px; border-radius:6px 6px 3px 3px; background:linear-gradient(180deg,var(--accent2),#8a3a4c);}
+  .bar-chart .bar-lbl{font-size:10px; color:var(--sub); margin-top:6px;}
+  .stats-mini-row{display:flex; gap:10px; margin-bottom:16px;}
+  .stats-mini{flex:1; background:var(--panel-2); border-radius:14px; padding:12px; text-align:center;}
+  .stats-mini .num{font-size:17px; font-weight:700;} .stats-mini .lbl{font-size:10px; color:var(--sub); margin-top:2px;}
+
+  /* 全螢幕計時 */
+  .fullscreen-page{position:fixed; inset:0; background:var(--bg); z-index:50; display:none; flex-direction:column; padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom);}
+  .fullscreen-page.show{display:flex;}
+  .fs-top{display:flex; justify-content:space-between; align-items:center; padding-top:18px;}
+  .fs-close{background:none; border:none; color:var(--sub); font-size:22px; padding:6px 10px; cursor:pointer;}
+  .fs-room{font-size:11px; color:var(--sub);}
+  .fs-body{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;}
+  .fs-emoji{font-size:40px; margin-bottom:10px;}
+  .fs-display{font-size:60px; font-weight:800;}
+  .fs-label{color:var(--sub); font-size:13px; margin-top:8px;}
+  .fs-bottom{padding:20px 0 26px;}
+
+  /* 加入房間畫面 */
+  .onboard{max-width:420px; margin:0 auto; padding:60px 20px;}
+  .onboard h1{text-align:center; font-size:26px; margin-bottom:6px;}
+  .onboard p.tag{text-align:center; color:var(--sub); font-size:13px; margin-bottom:30px;}
+  .ob-card{background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:20px; margin-bottom:16px;}
+  .ob-card label{font-size:12px; color:var(--sub); display:block; margin-bottom:6px;}
+  .ob-card input{width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; color:var(--ink); font-size:15px; margin-bottom:12px;}
+  .avatar-grid{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .avatar-opt{width:40px; height:40px; border-radius:50%; background:var(--panel-2); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:19px; cursor:pointer;}
+  .avatar-opt.selected{border-color:var(--accent);}
+  .ob-err{color:var(--accent2); font-size:12px; margin-top:-6px; margin-bottom:10px; display:none;}
+  .ob-divider{text-align:center; color:var(--sub); font-size:11px; margin:18px 0;}
+  .spinner{display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .fine-print{text-align:center; color:var(--sub); font-size:11px; margin-top:26px; line-height:1.6;}
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--panel-2); border:1px solid var(--line); padding:10px 18px; border-radius:999px; font-size:12px; z-index:100; display:none;}
+</style>
+</head>
+<body>
+
+<!-- ===================== 加入 / 建立房間 ===================== -->
+<div class="onboard" id="onboardScreen">
+  <h1>私<span style="color:var(--accent)">記</span>事</h1>
+  <p class="tag">跟朋友一起紀錄，只有房間代碼能進來</p>
+
+  <div class="ob-card">
+    <label>你的暱稱（房間內需唯一）</label>
+    <input type="text" id="obNickname" placeholder="例如：小葛" maxlength="12">
+    <label>選個頭像</label>
+    <div class="avatar-grid" id="obAvatarGrid"></div>
+    <div class="ob-err" id="obErr"></div>
+
+    <label>建立新房間</label>
+    <input type="text" id="obNewRoomName" placeholder="房間名稱，例如：兄弟會">
+    <button class="btn btn-start" id="btnCreateRoom" onclick="createRoom()">建立房間</button>
+
+    <div class="ob-divider">— 或 —</div>
+
+    <label>輸入朋友給的房間代碼</label>
+    <input type="text" id="obJoinCode" placeholder="房間代碼" autocapitalize="off">
+    <button class="btn btn-ghost" id="btnJoinRoom" onclick="joinRoom()">加入房間</button>
+  </div>
+  <div class="fine-print">房間代碼就是唯一的門檻，請只分享給信任的朋友。</div>
+</div>
+
+<!-- ===================== 主畫面 ===================== -->
+<div class="wrap" id="mainScreen" style="display:none;">
+
+  <header>
+    <h1>私<span>記</span>事</h1>
+    <div class="room-badge" id="roomBadge" onclick="showRoomCode()">房間</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-page="mine">我的紀錄</div>
+    <div class="tab" data-page="room">房間動態</div>
+    <div class="tab" data-page="edge">控射</div>
+    <div class="tab" data-page="stats">統計</div>
+  </div>
+
+  <!-- 我的紀錄 -->
+  <div class="page active" id="page-mine">
+    <div class="stats">
+      <div class="stat"><div class="num" id="myTotal">-</div><div class="lbl">總次數</div></div>
+      <div class="stat"><div class="num" id="myWeek">-</div><div class="lbl">本週</div></div>
+      <div class="stat"><div class="num" id="myAvg">-</div><div class="lbl">平均分鐘</div></div>
+    </div>
+
+    <div class="timer-card">
+      <div style="color:var(--sub); font-size:13px;">尚未開始</div>
+      <div style="font-size:38px; font-weight:700; margin:6px 0 16px;">00:00</div>
+      <button class="btn btn-start" onclick="openFsTimer()">開始計時</button>
+      <div class="row2">
+        <button class="btn btn-ghost" onclick="quickAdd()">快速記一筆</button>
+        <button class="btn btn-edge" onclick="switchTab('edge')">🔥 開控射模式</button>
+      </div>
+      <div class="toggle-row">
+        <span>紀錄時長公開給房間看</span>
+        <label class="switch"><input type="checkbox" id="publicToggle" checked><div class="track"></div><div class="thumb"></div></label>
+      </div>
+    </div>
+
+    <div class="section-title"><span>紀錄</span><button class="btn-ghost" style="width:auto; padding:6px 12px; font-size:12px; border-radius:999px;" onclick="loadMyEntries()">重新整理</button></div>
+    <div id="myLogList"><div class="empty">載入中…</div></div>
+  </div>
+
+  <!-- 房間動態 -->
+  <div class="page" id="page-room">
+    <div class="section-title" style="margin-top:4px;">本週排行 🏆</div>
+    <div id="podiumWrap"><div class="empty">載入中…</div></div>
+
+    <div class="section-title">最新動態</div>
+    <div id="roomFeed"><div class="empty">載入中…</div></div>
+  </div>
+
+  <!-- 控射 -->
+  <div class="page" id="page-edge">
+    <div id="edgeSetup">
+      <div class="edge-hero">
+        <div class="emoji">🔥💦</div>
+        <h2>控射模式</h2>
+        <p>回合數與時長全部隨機，何時能結束沒人知道，忍不住就是失敗。</p>
+      </div>
+      <div class="edge-config">
+        <label style="margin-bottom:10px; font-size:12px; color:var(--sub); display:block;">選擇難易度</label>
+        <div class="diff-grid" id="diffGrid">
+          <div class="diff-card" data-gomin="40" data-gomax="90" data-stopmin="15" data-stopmax="30" data-cummin="4" data-cummax="9" data-cumwinmin="20" data-cumwinmax="30" data-name="簡單">
+            <div class="diff-emoji">🌱</div><div class="diff-info"><div class="diff-name">簡單</div><div class="diff-desc">回合較長、休息多，時間窗也寬</div></div><div class="diff-check"></div>
+          </div>
+          <div class="diff-card selected" data-gomin="25" data-gomax="70" data-stopmin="12" data-stopmax="28" data-cummin="7" data-cummax="16" data-cumwinmin="12" data-cumwinmax="20" data-name="普通">
+            <div class="diff-emoji">🔥</div><div class="diff-info"><div class="diff-name">普通</div><div class="diff-desc">節奏隨機，何時能射猜不到</div></div><div class="diff-check"></div>
+          </div>
+          <div class="diff-card" data-gomin="15" data-gomax="55" data-stopmin="8" data-stopmax="22" data-cummin="12" data-cummax="24" data-cumwinmin="6" data-cumwinmax="12" data-name="困難">
+            <div class="diff-emoji">💀</div><div class="diff-info"><div class="diff-name">困難</div><div class="diff-desc">折磨很久、時間窗又短</div></div><div class="diff-check"></div>
+          </div>
+        </div>
+        <button class="btn btn-edge" onclick="startEdge()">開始 🔥</button>
+      </div>
+    </div>
+
+    <div id="edgeStage" style="display:none;">
+      <div class="edge-stage" id="edgeStageBg">
+        <div class="edge-ring state-go" id="edgeRing">
+          <div class="state-label" id="edgeStateLabel">GO</div>
+          <div class="state-sub" id="edgeStateSub">衝刺中</div>
+        </div>
+        <div style="font-size:15px; font-weight:600; margin-bottom:16px; min-height:20px;" id="edgeInstruction">維持你原本的速度</div>
+        <div id="edgeRoundWrap">
+          <div class="round-bar-track"><div class="round-bar-fill" id="roundBarFill" style="width:0%"></div></div>
+          <div style="font-size:12px; color:var(--sub);" id="roundCaption">擼</div>
+        </div>
+        <div id="edgeCumBlock" style="display:none;">
+          <div class="cum-timer-track"><div class="cum-timer-fill" id="cumTimerFill" style="width:100%"></div></div>
+          <button class="btn btn-edge" style="max-width:220px; margin:0 auto 10px; display:block;" onclick="finishEdgeSuccess()">💦 射了</button>
+        </div>
+        <div id="edgeResultBlock" style="display:none;">
+          <div class="result-emoji" id="resultEmoji">🎉</div>
+          <div style="font-weight:700; margin-bottom:4px;" id="resultTitle">成功！</div>
+          <div style="font-size:12px; color:var(--sub); margin-bottom:16px;" id="resultDesc"></div>
+          <button class="btn btn-ghost" onclick="stopEdge()">回到設定</button>
+        </div>
+        <button class="btn btn-ghost" id="edgeQuitBtn" onclick="stopEdge()" style="margin-top:6px;">放棄並記錄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 統計（僅自己看得到，資料來自本人紀錄） -->
+  <div class="page" id="page-stats">
+    <div class="stats-card" style="background:linear-gradient(135deg, rgba(201,161,90,0.12), var(--panel)); border-color: var(--accent-dim);">
+      <div style="font-size:11px; color: var(--sub);">🔒 這一頁只有你自己看得到</div>
+    </div>
+    <div class="stats-mini-row">
+      <div class="stats-mini"><div class="num" id="statTotal2">-</div><div class="lbl">總次數</div></div>
+      <div class="stats-mini"><div class="num" id="statSumDur">-</div><div class="lbl">累積時長</div></div>
+      <div class="stats-mini"><div class="num" id="statPeakHour">-</div><div class="lbl">最常時段</div></div>
+    </div>
+    <div class="stats-card">
+      <h3>常見時段分佈</h3>
+      <div class="sub-note">依你所有紀錄的打卡時間統計</div>
+      <div class="bar-chart" id="hourChart"></div>
+    </div>
+  </div>
+
+  <div class="fine-print">資料即時存在 Supabase 資料庫，房間內朋友互相都看得到彼此的紀錄（依你設定的公開範圍）。</div>
+</div>
+
+<!-- 全螢幕計時 -->
+<div class="fullscreen-page" id="fsTimer">
+  <div class="fs-top"><button class="fs-close" onclick="closeFsTimer(false)">✕</button><div class="fs-room" id="fsRoomLabel"></div><div style="width:34px;"></div></div>
+  <div class="fs-body">
+    <div class="fs-emoji">💦</div>
+    <div class="fs-display" id="fsDisplay">00:00</div>
+    <div class="fs-label">計時中，離開頁面也不會中斷</div>
+  </div>
+  <div class="fs-bottom">
+    <button class="btn btn-stop" onclick="closeFsTimer(true)">結束並記錄</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// Supabase 連線設定
+// ============================================================
+const SUPABASE_URL = 'https://aeygtbhfxtbcfxkvtsfb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFleWd0YmhmeHRiY2Z4a3Z0c2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTk0NDgsImV4cCI6MjA5ODU3NTQ0OH0.wQNk0yeQR3aSharFgw0m3E2X6ynyrn6UbXDK0mJlqPU';
+
+async function sb(path, options={}){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': options.prefer || 'return=representation',
+      ...(options.headers||{})
+    }
+  });
+  if(!res.ok){
+    const errText = await res.text();
+    throw new Error(`Supabase ${res.status}: ${errText}`);
+  }
+  if(res.status === 204) return null;
+  return res.json();
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(toast._h);
+  toast._h = setTimeout(()=> t.style.display='none', 2600);
+}
+
+// ============================================================
+// 本機身份（存在 localStorage，不用登入帳號密碼）
+// ============================================================
+const LS_KEY = 'privlog_identity_v1';
+function getIdentity(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ return null; } }
+function setIdentity(obj){ localStorage.setItem(LS_KEY, JSON.stringify(obj)); }
+function genDeviceId(){ return 'd_' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+let ME = null; // {deviceId, groupCode, groupName, memberId, nickname, avatar}
+
+// ============================================================
+// 頭像選擇
+// ============================================================
+const AVATARS = ['🦊','🐯','🐸','🐢','🐼','🦁','🐨','🐵','🦄','🐺','🐲','🐙'];
+let selectedAvatar = AVATARS[Math.floor(Math.random()*AVATARS.length)];
+function renderAvatarGrid(){
+  const grid = document.getElementById('obAvatarGrid');
+  grid.innerHTML = AVATARS.map(a=>
+    `<div class="avatar-opt ${a===selectedAvatar?'selected':''}" data-a="${a}">${a}</div>`
+  ).join('');
+  grid.querySelectorAll('.avatar-opt').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      selectedAvatar = el.dataset.a;
+      grid.querySelectorAll('.avatar-opt').forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+  });
+}
+renderAvatarGrid();
+
+function showErr(msg){
+  const e = document.getElementById('obErr');
+  e.textContent = msg; e.style.display = msg ? 'block' : 'none';
+}
+
+// ============================================================
+// 建立房間
+// ============================================================
+function randomRoomCode(){
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let s = '';
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+async function createRoom(){
+  const nickname = document.getElementById('obNickname').value.trim();
+  const roomName = document.getElementById('obNewRoomName').value.trim() || '我們的房間';
+  if(!nickname){ showErr('請先輸入暱稱'); return; }
+  showErr('');
+  const btn = document.getElementById('btnCreateRoom');
+  btn.innerHTML = '<span class="spinner"></span>建立中…'; btn.disabled = true;
+  try{
+    const code = randomRoomCode();
+    await sb('groups', { method:'POST', body: JSON.stringify({ code, name: roomName }) });
+    await joinRoomByCode(code, nickname);
+  }catch(err){
+    showErr('建立失敗：' + err.message);
+  }finally{
+    btn.textContent = '建立房間'; btn.disabled = false;
+  }
+}
+
+async function joinRoom(){
+  const code = document.getElementById('obJoinCode').value.trim().toLowerCase();
+  const nickname = document.getElementById('obNickname').value.trim();
+  if(!code){ showErr('請輸入房間代碼'); return; }
+  if(!nickname){ showErr('請先輸入暱稱'); return; }
+  showErr('');
+  const btn = document.getElementById('btnJoinRoom');
+  btn.innerHTML = '<span class="spinner"></span>加入中…'; btn.disabled = true;
+  try{
+    await joinRoomByCode(code, nickname);
+  }catch(err){
+    showErr('加入失敗：' + err.message);
+  }finally{
+    btn.textContent = '加入房間'; btn.disabled = false;
+  }
+}
+
+async function joinRoomByCode(code, nickname){
+  // 確認房間存在
+  const groups = await sb(`groups?code=eq.${encodeURIComponent(code)}`);
+  if(!groups || groups.length === 0) throw new Error('找不到這個房間代碼');
+  const group = groups[0];
+
+  // 檢查暱稱是否已被使用
+  const existing = await sb(`members?group_code=eq.${encodeURIComponent(code)}&nickname=eq.${encodeURIComponent(nickname)}`);
+  if(existing && existing.length > 0) throw new Error('這個暱稱已經有人用了，換一個試試');
+
+  const deviceId = genDeviceId();
+  const created = await sb('members', {
+    method:'POST',
+    body: JSON.stringify({ group_code: code, nickname, avatar: selectedAvatar, device_id: deviceId })
+  });
+  const member = created[0];
+
+  ME = { deviceId, groupCode: code, groupName: group.name, memberId: member.id, nickname, avatar: selectedAvatar };
+  setIdentity(ME);
+  enterApp();
+}
+
+// ============================================================
+// 進入主畫面
+// ============================================================
+function enterApp(){
+  document.getElementById('onboardScreen').style.display = 'none';
+  document.getElementById('mainScreen').style.display = 'block';
+  document.getElementById('roomBadge').textContent = `房間：${ME.groupName}`;
+  document.getElementById('fsRoomLabel').textContent = `房間：${ME.groupName}`;
+  loadMyEntries();
+  loadRoomFeed();
+}
+function showRoomCode(){
+  toast(`房間代碼：${ME.groupCode}（分享給朋友讓他們加入）`);
+}
+
+// ============================================================
+// 分頁切換
+// ============================================================
+document.querySelectorAll('.tab').forEach(t=> t.addEventListener('click', ()=> switchTab(t.dataset.page)));
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.page===name));
+  document.querySelectorAll('.page').forEach(p=> p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(name === 'room') loadRoomFeed();
+  if(name === 'stats') loadStats();
+}
+
+// ============================================================
+// 寫入一筆紀錄
+// ============================================================
+async function insertEntry({ durationSec=null, mode='quick', rounds=null, success=null }){
+  const isPublic = document.getElementById('publicToggle').checked;
+  const body = {
+    group_code: ME.groupCode,
+    member_id: ME.memberId,
+    nickname: ME.nickname,
+    duration_sec: durationSec,
+    duration_public: isPublic,
+    mode, rounds, success
+  };
+  await sb('entries', { method:'POST', body: JSON.stringify(body) });
+  loadMyEntries();
+}
+
+async function quickAdd(){
+  try{ await insertEntry({ mode:'quick' }); toast('已記錄一筆'); }
+  catch(e){ toast('寫入失敗：'+e.message); }
+}
+
+// ---- 全螢幕計時 ----
+let fsStartedAt = null, fsTick = null;
+function openFsTimer(){
+  fsStartedAt = Date.now();
+  document.getElementById('fsTimer').classList.add('show');
+  fsTick = setInterval(()=>{
+    const sec = Math.floor((Date.now()-fsStartedAt)/1000);
+    const m = Math.floor(sec/60).toString().padStart(2,'0');
+    const s = (sec%60).toString().padStart(2,'0');
+    document.getElementById('fsDisplay').textContent = m+':'+s;
+  }, 1000);
+}
+async function closeFsTimer(save){
+  clearInterval(fsTick);
+  document.getElementById('fsTimer').classList.remove('show');
+  if(save){
+    const durationSec = Math.round((Date.now()-fsStartedAt)/1000);
+    try{ await insertEntry({ durationSec, mode:'timer' }); toast('已記錄，時長 '+Math.round(durationSec/60)+' 分'); }
+    catch(e){ toast('寫入失敗：'+e.message); }
+  }
+}
+
+// ============================================================
+// 我的紀錄
+// ============================================================
+function fmtDT(tsStr){
+  const d = new Date(tsStr);
+  return { date:(d.getMonth()+1)+'/'+d.getDate(), time: d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0') };
+}
+async function loadMyEntries(){
+  const el = document.getElementById('myLogList');
+  try{
+    const rows = await sb(`entries?member_id=eq.${ME.memberId}&order=ts.desc&limit=50`);
+    // 統計
+    document.getElementById('myTotal').textContent = rows.length;
+    const now = new Date(); const weekStart = new Date(now); weekStart.setHours(0,0,0,0); weekStart.setDate(now.getDate()-now.getDay());
+    document.getElementById('myWeek').textContent = rows.filter(r=> new Date(r.ts) >= weekStart).length;
+    const withDur = rows.filter(r=> r.duration_sec != null);
+    document.getElementById('myAvg').textContent = withDur.length ? Math.round(withDur.reduce((a,r)=>a+r.duration_sec,0)/withDur.length/60) : 0;
+
+    if(rows.length === 0){ el.innerHTML = '<div class="empty">還沒有紀錄</div>'; return; }
+    el.innerHTML = rows.map(r=>{
+      const {date,time} = fmtDT(r.ts);
+      const modeLabel = r.mode==='edge' ? `控射${r.success===false?'（失敗）':r.success?'（成功）':''}` : (r.duration_sec!=null ? '計時' : '快速記錄');
+      const durText = r.duration_sec!=null ? Math.floor(r.duration_sec/60)+':'+(r.duration_sec%60).toString().padStart(2,'0') : (r.mode==='edge'?(r.success?'成功':'失敗'):'—');
+      return `<div class="log-item">
+        <div><span class="date">${date} ${time}</span>${modeLabel}</div>
+        <div style="display:flex; align-items:center;">
+          <span class="dur ${r.duration_sec==null && r.mode!=='edge' ?'hidden-dur':''}">${durText}</span>
+          <button class="del" onclick="deleteEntry('${r.id}')">×</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+async function deleteEntry(id){
+  try{ await sb(`entries?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' }); loadMyEntries(); }
+  catch(e){ toast('刪除失敗：'+e.message); }
+}
+
+// ============================================================
+// 房間動態 + 排行榜
+// ============================================================
+async function loadRoomFeed(){
+  const feedEl = document.getElementById('roomFeed');
+  const podiumEl = document.getElementById('podiumWrap');
+  try{
+    const now = new Date(); const weekStart = new Date(now); weekStart.setHours(0,0,0,0); weekStart.setDate(now.getDate()-now.getDay());
+    const rows = await sb(`entries?group_code=eq.${ME.groupCode}&order=ts.desc&limit=100`);
+    const members = await sb(`members?group_code=eq.${ME.groupCode}`);
+    const avatarByName = {}; members.forEach(m=> avatarByName[m.nickname] = m.avatar);
+
+    // 排行榜（本週次數）
+    const weekRows = rows.filter(r=> new Date(r.ts) >= weekStart);
+    const counts = {};
+    weekRows.forEach(r=> counts[r.nickname] = (counts[r.nickname]||0)+1);
+    const ranked = Object.entries(counts).sort((a,b)=> b[1]-a[1]);
+
+    if(ranked.length === 0){
+      podiumEl.innerHTML = '<div class="empty">本週還沒有人打卡</div>';
+    } else {
+      const top3 = ranked.slice(0,3);
+      const order = top3.length===3 ? [top3[1],top3[0],top3[2]] : top3.length===2 ? [top3[1],top3[0]] : [top3[0]];
+      const classes = top3.length===3 ? ['second','first','third'] : top3.length===2 ? ['second','first'] : ['first'];
+      let podiumHtml = '<div class="podium">';
+      order.forEach(([name,count], i)=>{
+        const cls = classes[i];
+        const rankNum = cls==='first'?1:cls==='second'?2:3;
+        podiumHtml += `<div class="p-col ${cls}">
+          <div class="p-avatar">${avatarByName[name]||'🙂'}</div>
+          <div class="p-name">${name}${name===ME.nickname?' <span style="color:var(--accent); font-size:9px;">YOU</span>':''}</div>
+          <div class="p-count">${count} 次</div>
+          <div class="p-stand">${rankNum}</div>
+        </div>`;
+      });
+      podiumHtml += '</div>';
+      podiumEl.innerHTML = podiumHtml;
+
+      if(ranked.length > 3){
+        const maxC = ranked[0][1];
+        podiumHtml = '<div class="leaderboard">' + ranked.slice(3).map(([name,count],i)=>
+          `<div class="lb-item">
+            <div style="width:22px; color:var(--sub); font-weight:700; font-size:12px;">${i+4}</div>
+            <div class="lb-avatar">${avatarByName[name]||'🙂'}</div>
+            <div class="lb-mid"><div class="lb-name">${name}${name===ME.nickname?'<span class=\"you-tag\">YOU</span>':''}</div>
+              <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${Math.round(count/maxC*100)}%"></div></div>
+            </div>
+            <div class="lb-count">${count} <small>次</small></div>
+          </div>`
+        ).join('') + '</div>';
+        podiumEl.innerHTML += podiumHtml;
+      }
+    }
+
+    // 動態列表
+    if(rows.length === 0){
+      feedEl.innerHTML = '<div class="empty">房間還沒有任何紀錄</div>';
+    } else {
+      feedEl.innerHTML = rows.slice(0,30).map(r=>{
+        const you = r.nickname === ME.nickname;
+        const timeAgo = formatAgo(r.ts);
+        let detail;
+        if(r.mode === 'edge'){
+          detail = `控射・${r.success?'成功 🎉':'失敗 🚫'}${r.duration_public && r.duration_sec!=null ? '・時長 '+Math.floor(r.duration_sec/60)+':'+(r.duration_sec%60).toString().padStart(2,'0') : '・時長已隱藏'}`;
+        } else {
+          detail = r.duration_public && r.duration_sec!=null
+            ? `時長 <b>${Math.floor(r.duration_sec/60)}:${(r.duration_sec%60).toString().padStart(2,'0')}</b>`
+            : '已記錄一筆・時長已隱藏';
+        }
+        return `<div class="member-item">
+          <div class="member-top">
+            <div class="member-name"><span class="lb-avatar" style="width:26px;height:26px;font-size:13px;">${avatarByName[r.nickname]||'🙂'}</span>${r.nickname}${you?'<span class="you-tag">YOU</span>':''}</div>
+            <div class="member-time">${timeAgo}</div>
+          </div>
+          <div class="member-detail">${detail}</div>
+        </div>`;
+      }).join('');
+    }
+  }catch(e){
+    feedEl.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+    podiumEl.innerHTML = '';
+  }
+}
+function formatAgo(tsStr){
+  const diffMs = Date.now() - new Date(tsStr).getTime();
+  const min = Math.floor(diffMs/60000);
+  if(min < 1) return '剛剛';
+  if(min < 60) return min+' 分鐘前';
+  const hr = Math.floor(min/60);
+  if(hr < 24) return hr+' 小時前';
+  const d = new Date(tsStr);
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+
+// ============================================================
+// 個人統計
+// ============================================================
+async function loadStats(){
+  try{
+    const rows = await sb(`entries?member_id=eq.${ME.memberId}&order=ts.desc&limit=500`);
+    document.getElementById('statTotal2').textContent = rows.length;
+    const withDur = rows.filter(r=>r.duration_sec!=null);
+    const sumSec = withDur.reduce((a,r)=>a+r.duration_sec,0);
+    const h = Math.floor(sumSec/3600), m = Math.round((sumSec%3600)/60);
+    document.getElementById('statSumDur').textContent = rows.length ? `${h}h ${m}m` : '0h';
+
+    const hourBuckets = [0,0,0,0,0,0,0,0]; // 3小時一格
+    rows.forEach(r=>{
+      const hr = new Date(r.ts).getHours();
+      hourBuckets[Math.floor(hr/3)]++;
+    });
+    const maxBucket = Math.max(1, ...hourBuckets);
+    const peakIdx = hourBuckets.indexOf(Math.max(...hourBuckets));
+    document.getElementById('statPeakHour').textContent = rows.length ? `${peakIdx*3}:00` : '-';
+
+    const labels = ['0-3','3-6','6-9','9-12','12-15','15-18','18-21','21-24'];
+    document.getElementById('hourChart').innerHTML = hourBuckets.map((v,i)=>{
+      const hgt = Math.max(6, Math.round(v/maxBucket*100));
+      return `<div class="bar-col"><div class="bar" style="height:${hgt}%"></div><div class="bar-lbl">${labels[i]}</div></div>`;
+    }).join('');
+  }catch(e){
+    toast('統計載入失敗：'+e.message);
+  }
+}
+
+// ============================================================
+// 控射（邏輯同前，成功/失敗會寫入 entries）
+// ============================================================
+document.querySelectorAll('.diff-card').forEach(card=>{
+  card.addEventListener('click', ()=>{
+    document.querySelectorAll('.diff-card').forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+  });
+});
+function getSelectedDiff(){
+  const card = document.querySelector('.diff-card.selected');
+  return {
+    goMin:+card.dataset.gomin, goMax:+card.dataset.gomax,
+    stopMin:+card.dataset.stopmin, stopMax:+card.dataset.stopmax,
+    cumMin:+card.dataset.cummin, cumMax:+card.dataset.cummax,
+    cumWinMin:+card.dataset.cumwinmin, cumWinMax:+card.dataset.cumwinmax,
+    name: card.dataset.name
+  };
+}
+function randRange(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+const GO_INSTRUCTIONS = ['維持你原本的速度','放慢到最慢','換另一隻手','捏一下乳頭','全速衝刺','只用兩根手指','慢慢往上、快快往下','閉上眼睛專心感受','數到十再繼續','輕輕搔弄前端','想像快到了但別真的射'];
+const STOP_INSTRUCTIONS = ['完全放開，手離開','深呼吸，忍住','手貼在大腿上等信號','冷靜一下，別碰','雙手離開，撐過去'];
+
+let edgeTimers = [], edgeStartTs=null, edgeRoundsDone=0, edgeCumRoundTarget=0, currentDiff=null;
+function clearEdgeTimers(){ edgeTimers.forEach(t=>{clearTimeout(t);clearInterval(t);}); edgeTimers=[]; }
+
+function startEdge(){
+  currentDiff = getSelectedDiff();
+  edgeStartTs = Date.now();
+  edgeRoundsDone = 0;
+  edgeCumRoundTarget = randRange(currentDiff.cumMin, currentDiff.cumMax);
+  document.getElementById('edgeSetup').style.display='none';
+  document.getElementById('edgeStage').style.display='block';
+  document.getElementById('edgeRoundWrap').style.display='block';
+  document.getElementById('edgeCumBlock').style.display='none';
+  document.getElementById('edgeResultBlock').style.display='none';
+  document.getElementById('edgeQuitBtn').style.display='block';
+  nextRound();
+}
+function nextRound(){
+  clearEdgeTimers();
+  edgeRoundsDone++;
+  if(edgeRoundsDone >= edgeCumRoundTarget){ enterCumPhase(); return; }
+  const diff = currentDiff;
+  const ring=document.getElementById('edgeRing'), stageBg=document.getElementById('edgeStageBg');
+  const label=document.getElementById('edgeStateLabel'), sub=document.getElementById('edgeStateSub');
+  const instr=document.getElementById('edgeInstruction'), barFill=document.getElementById('roundBarFill'), caption=document.getElementById('roundCaption');
+  function pulse(){ ring.classList.remove('pulse'); void ring.offsetWidth; ring.classList.add('pulse'); }
+  const goSec = randRange(diff.goMin, diff.goMax);
+  ring.className='edge-ring state-go'; stageBg.className='edge-stage bg-go'; pulse();
+  label.textContent='GO'; sub.textContent='衝刺中';
+  instr.textContent = GO_INSTRUCTIONS[Math.floor(Math.random()*GO_INSTRUCTIONS.length)];
+  barFill.className='round-bar-fill go'; caption.textContent='擼';
+  animateBar(barFill, goSec, ()=>{
+    const hasStop = Math.random() > 0.15;
+    if(!hasStop){ nextRound(); return; }
+    const stopSec = randRange(diff.stopMin, diff.stopMax);
+    ring.className='edge-ring state-stop'; stageBg.className='edge-stage bg-stop'; pulse();
+    label.textContent='STOP'; sub.textContent='停手，不准碰';
+    instr.textContent = STOP_INSTRUCTIONS[Math.floor(Math.random()*STOP_INSTRUCTIONS.length)];
+    barFill.className='round-bar-fill stop'; caption.textContent='休息';
+    animateBar(barFill, stopSec, ()=> nextRound());
+  });
+}
+function animateBar(el, sec, cb){
+  const durMs = (sec*1000)/5, stepMs=40; let elapsed=0;
+  el.style.width='0%';
+  const iv = setInterval(()=>{
+    elapsed+=stepMs;
+    el.style.width = Math.min(100,(elapsed/durMs)*100)+'%';
+    if(elapsed>=durMs){ clearInterval(iv); cb(); }
+  }, stepMs);
+  edgeTimers.push(iv);
+}
+function enterCumPhase(){
+  clearEdgeTimers();
+  const ring=document.getElementById('edgeRing'), stageBg=document.getElementById('edgeStageBg');
+  ring.className='edge-ring state-cum'; stageBg.className='edge-stage bg-cum';
+  document.getElementById('edgeStateLabel').textContent='CUM!';
+  document.getElementById('edgeStateSub').textContent='現在！可以射了';
+  document.getElementById('edgeInstruction').textContent='在時間內射出來，時間到還沒射就算失敗';
+  document.getElementById('edgeRoundWrap').style.display='none';
+  document.getElementById('edgeCumBlock').style.display='block';
+  const windowSec = randRange(currentDiff.cumWinMin, currentDiff.cumWinMax);
+  const fill = document.getElementById('cumTimerFill'); fill.style.width='100%';
+  const demoWindowMs = windowSec*1000/2, stepMs=80; let elapsed=0;
+  const iv = setInterval(()=>{
+    elapsed+=stepMs;
+    fill.style.width = Math.max(0,100-(elapsed/demoWindowMs)*100)+'%';
+    if(elapsed>=demoWindowMs){ clearInterval(iv); showEdgeResult(false); }
+  }, stepMs);
+  edgeTimers.push(iv);
+}
+function finishEdgeSuccess(){ clearEdgeTimers(); showEdgeResult(true); }
+async function showEdgeResult(success){
+  clearEdgeTimers();
+  const ring=document.getElementById('edgeRing'), stageBg=document.getElementById('edgeStageBg');
+  ring.className='edge-ring '+(success?'state-success':'state-fail');
+  stageBg.className='edge-stage '+(success?'':'bg-fail');
+  document.getElementById('edgeCumBlock').style.display='none';
+  document.getElementById('edgeRoundWrap').style.display='none';
+  document.getElementById('edgeQuitBtn').style.display='none';
+  document.getElementById('edgeInstruction').textContent='';
+  document.getElementById('edgeResultBlock').style.display='block';
+  document.getElementById('resultEmoji').textContent = success?'🎉':'🚫';
+  document.getElementById('resultTitle').textContent = success?'成功射出！':'失敗，這次不能射';
+  const durationSec = Math.round((Date.now()-edgeStartTs)/1000);
+  document.getElementById('resultDesc').textContent = success
+    ? `撐過 ${edgeRoundsDone} 回合、約 ${Math.max(1,Math.round(durationSec/60))} 分鐘`
+    : `時間到還沒射，依規則這次算失敗`;
+  document.getElementById('edgeStateLabel').textContent = success?'DONE':'FAIL';
+  document.getElementById('edgeStateSub').textContent = '';
+
+  try{
+    await insertEntry({ durationSec, mode:'edge', rounds: edgeRoundsDone, success });
+  }catch(e){ toast('紀錄寫入失敗：'+e.message); }
+}
+function stopEdge(){
+  clearEdgeTimers();
+  document.getElementById('edgeSetup').style.display='block';
+  document.getElementById('edgeStage').style.display='none';
+  document.getElementById('edgeStageBg').className='edge-stage';
+}
+
+// ============================================================
+// 初始化：如果已有身份，直接進主畫面；否則顯示加入畫面
+// ============================================================
+(function init(){
+  const saved = getIdentity();
+  if(saved && saved.groupCode && saved.memberId){
+    ME = saved;
+    enterApp();
+  }
+})();
+</script>
+</body>
+</html>
